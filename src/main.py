@@ -7,10 +7,24 @@ from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, StreamingResponse
 from dotenv import load_dotenv
+from fastapi.middleware.cors import CORSMiddleware
 
 load_dotenv()
 
 app = FastAPI()
+
+SERVICE_PORT = int(os.getenv("SERVICE_PORT", 7860))
+SERVICE_HOST = os.getenv("SERVICE_HOST", "0.0.0.0")
+CLIENT_HOST = os.getenv("CLIENT_HOST", "localhost")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[f"http://localhost:{SERVICE_PORT}"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 
 BRAVE_API_URL = "https://api.search.brave.com/res/v1/web/search"
@@ -48,7 +62,14 @@ async def search_brave(query: str) -> Optional[str]:
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("chat.html", {"request": request})
+    return templates.TemplateResponse(
+        "chat.html",
+        {
+            "request": request,
+            "port": SERVICE_PORT,
+            "host": CLIENT_HOST
+        }
+    )
 
 @app.post("/chat")
 async def chat(message: str = Form(...)):
@@ -87,4 +108,4 @@ Please provide a response based on the search results above."""
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host=SERVICE_HOST, port=SERVICE_PORT) 

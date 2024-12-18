@@ -79,6 +79,10 @@
     </form>
 
     <script>
+        const SERVICE_HOST = '{{ host }}';
+        const SERVICE_PORT = '{{ port }}';
+        const SERVICE_URL = `http://${SERVICE_HOST}:${SERVICE_PORT}`;
+
         const chatContainer = document.getElementById('chat-container');
         const chatForm = document.getElementById('chat-form');
         const messageInput = document.getElementById('message-input');
@@ -108,7 +112,7 @@
             formData.append('message', message);
 
             try {
-                const response = await fetch('/chat', {
+                const response = await fetch(`${SERVICE_URL}/chat`, {
                     method: 'POST',
                     body: formData
                 });

@@ -1,0 +1,10 @@
+services:
+  fastapi:
+    build: .
+    ports:
+      - "${SERVICE_PORT}:${SERVICE_PORT}"
+    env_file:
+      - .env
+    volumes:
+      - ./src:/app/src  # For development - allows live updates
+    network_mode: "host"
