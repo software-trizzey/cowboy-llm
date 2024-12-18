@@ -1,5 +1,5 @@
 services:
-  fastapi:
+  server:
     build: .
     ports:
       - "${SERVICE_PORT}:${SERVICE_PORT}"
