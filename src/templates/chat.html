@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Chat with AI</title>
+    <title>Local Chat</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -41,10 +41,37 @@
         .ai-message {
             background-color: #d4edda;
         }
+        .typing-indicator {
+            display: inline-block;
+            margin-left: 5px;
+        }
+        
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #90949c;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: typing 1s infinite ease-in-out;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
     </style>
 </head>
 <body>
-    <h1>Chat with AI</h1>
+    <h1>Local Chat</h1>
     <div id="chat-container"></div>
     <form id="chat-form">
         <input type="text" id="message-input" placeholder="Type your message..." required>
@@ -56,15 +83,27 @@
         const chatForm = document.getElementById('chat-form');
         const messageInput = document.getElementById('message-input');
 
+        function createTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator';
+            indicator.innerHTML = '<span></span><span></span><span></span>';
+            return indicator;
+        }
+
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const message = messageInput.value;
-            
-            // Add user message to chat
-            appendMessage(message, 'user');
             messageInput.value = '';
+            
+            appendMessage(message, 'user');
 
-            // Send message to server
+            const aiMessageDiv = document.createElement('div');
+            aiMessageDiv.classList.add('message', 'ai-message');
+            const typingIndicator = createTypingIndicator();
+            aiMessageDiv.appendChild(typingIndicator);
+            chatContainer.appendChild(aiMessageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
             const formData = new FormData();
             formData.append('message', message);
 
@@ -73,13 +112,42 @@
                     method: 'POST',
                     body: formData
                 });
-                const data = await response.json();
-                
-                // Add AI response to chat
-                appendMessage(data.response, 'ai');
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let aiResponse = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const messages = chunk.split('\n\n');
+                    
+                    for (const message of messages) {
+                        const ssePrefix = 'data: ';
+                        if (message.startsWith(ssePrefix)) {
+                            try {
+                                const data = JSON.parse(message.slice(ssePrefix.length));
+                                
+                                const typingIndicator = aiMessageDiv.querySelector('.typing-indicator');
+                                if (typingIndicator) {
+                                    aiMessageDiv.removeChild(typingIndicator);
+                                }
+
+                                aiResponse += data.content;
+                                aiMessageDiv.textContent = aiResponse;
+                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                            } catch (e) {
+                                console.error('Error parsing JSON:', e);
+                            }
+                        }
+                    }
+                }
+
             } catch (error) {
                 console.error('Error:', error);
-                appendMessage('Error: Could not get response', 'ai');
+                aiMessageDiv.textContent = 'Error: Could not get response';
             }
         });
 

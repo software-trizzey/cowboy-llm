@@ -1,9 +1,11 @@
-import httpx
+import json
 import os
+import ollama
+import httpx
 from typing import Optional
 from fastapi import FastAPI, Request, Form
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,7 +13,6 @@ load_dotenv()
 app = FastAPI()
 templates = Jinja2Templates(directory=os.path.join(os.path.dirname(__file__), "templates"))
 
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
 BRAVE_API_URL = "https://api.search.brave.com/res/v1/web/search"
 BRAVE_API_KEY = os.getenv("BRAVE_API_KEY")
 
@@ -51,12 +52,12 @@ async def home(request: Request):
 
 @app.post("/chat")
 async def chat(message: str = Form(...)):
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async def generate_response():
         try:
-            # First, check if we need to search
+            # Check if we need to search
             if "search" in message.lower() or "look up" in message.lower() or "find" in message.lower() or "get latest" in message.lower():
+                yield f"data: {json.dumps({'content': 'Searching the web...'})}\n\n"
                 search_results = await search_brave(message)
-                # Combine the search results with the original query for the LLM
                 enhanced_prompt = f"""Context from web search:
 {search_results}
 
@@ -66,27 +67,23 @@ Please provide a response based on the search results above."""
             else:
                 enhanced_prompt = message
 
-            response = await client.post(
-                OLLAMA_API_URL,
-                json={
-                    "model": "llama3.2:latest",
-                    "prompt": enhanced_prompt,
-                    "stream": False
-                }
+            stream = ollama.chat(
+                model='llama3.2:latest',
+                messages=[{"role": "user", "content": enhanced_prompt}],
+                stream=True
             )
             
-            if response.status_code == 200:
-                return {"response": response.json()["response"]}
-            else:
-                error_msg = response.json() if response.status_code != 500 else str(response.status_code)
-                print(f"Error response from Ollama: {error_msg}")
-                return {"response": f"Error: Could not get response from Ollama. Status: {response.status_code}"}
-                
-        except httpx.ReadTimeout:
-            return {"response": "Error: Request to Ollama timed out. Please try again."}
+            for chunk in stream:
+                if 'message' in chunk and 'content' in chunk['message']:
+                    yield f"data: {json.dumps({'content': chunk['message']['content']})}\n\n"
+
         except Exception as e:
-            print(f"Unexpected error: {str(e)}")
-            return {"response": "Error: An unexpected error occurred"}
+            yield f"data: {json.dumps({'content': f'Error: {str(e)}'})}\n\n"
+
+    return StreamingResponse(
+        generate_response(),
+        media_type="text/event-stream"
+    )
 
 if __name__ == "__main__":
     import uvicorn

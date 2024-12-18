@@ -3,4 +3,5 @@ uvicorn
 python-multipart
 httpx
 jinja2
-python-dotenv 
+python-dotenv
+ollama 
