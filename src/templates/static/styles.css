@@ -1,0 +1,155 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #f5f5f5;
+}
+
+#chat-container {
+    border: 1px solid #ccc;
+    padding: 20px;
+    height: 600px;
+    overflow-y: auto;
+    margin-bottom: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#message-input {
+    width: 80%;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+button {
+    padding: 12px 24px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.message {
+    margin: 16px 0;
+    padding: 12px;
+    border-radius: 8px;
+    max-width: 80%;
+}
+
+.user-message {
+    background-color: #e9ecef;
+    margin-left: auto;
+    margin-right: 0;
+}
+
+.ai-message {
+    background-color: #f8f9fa;
+    border-left: 4px solid #007bff;
+}
+
+/* Markdown Styling */
+.message p {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.message code {
+    background-color: #f8f9fa;
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.message pre {
+    background-color: #f8f9fa;
+    padding: 16px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.message pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+.message blockquote {
+    border-left: 4px solid #007bff;
+    margin: 8px 0;
+    padding-left: 16px;
+    color: #666;
+}
+
+.message ul, .message ol {
+    margin: 8px 0;
+    padding-left: 24px;
+}
+
+.message h1, .message h2, .message h3, .message h4 {
+    margin: 16px 0 8px 0;
+    color: #333;
+}
+
+.typing-indicator {
+    display: inline-block;
+    margin-left: 5px;
+}
+
+.typing-indicator span {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #90949c;
+    border-radius: 50%;
+    margin-right: 5px;
+    animation: typing 1s infinite ease-in-out;
+}
+
+.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+} 
+
+/* Add these styles to your existing CSS */
+.app-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 16px 0;
+}
+
+.app-header h1 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 32px;
+    color: #2C3E50;
+    font-weight: 600;
+}
+
+.app-logo {
+    width: 94px;
+    height: 94px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    transition: transform 0.3s ease;
+}
+
+.app-logo:hover {
+    transform: scale(1.05);
+} 

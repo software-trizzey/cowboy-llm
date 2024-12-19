@@ -9,6 +9,7 @@ from fastapi.responses import HTMLResponse, StreamingResponse
 from dotenv import load_dotenv
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Cookie
+from fastapi.staticfiles import StaticFiles
 
 load_dotenv()
 
@@ -167,6 +168,8 @@ async def chat(message: str = Form(...), session_id: str = Cookie(None)):
         generate_response(),
         media_type="text/event-stream"
     )
+
+app.mount("/static", StaticFiles(directory=os.path.join(os.path.dirname(__file__), "templates/static")), name="static")
 
 if __name__ == "__main__":
     import uvicorn

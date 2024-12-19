@@ -2,122 +2,25 @@
 <html>
 <head>
     <title>Cowboy LLM</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/logos/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/logos/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/logos/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/static/logos/favicon/site.webmanifest">
+    <link rel="shortcut icon" href="/static/logos/favicon/favicon.ico">
+    <meta name="theme-color" content="#ffffff">
+    
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            background-color: #f5f5f5;
-        }
-        #chat-container {
-            border: 1px solid #ccc;
-            padding: 20px;
-            height: 600px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        #message-input {
-            width: 80%;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        button {
-            padding: 12px 24px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .message {
-            margin: 16px 0;
-            padding: 12px;
-            border-radius: 8px;
-            max-width: 80%;
-        }
-        .user-message {
-            background-color: #e9ecef;
-            margin-left: auto;
-            margin-right: 0;
-        }
-        .ai-message {
-            background-color: #f8f9fa;
-            border-left: 4px solid #007bff;
-        }
-        
-        /* Markdown Styling */
-        .message p {
-            margin: 8px 0;
-            line-height: 1.5;
-        }
-        .message code {
-            background-color: #f8f9fa;
-            padding: 2px 4px;
-            border-radius: 4px;
-            font-family: 'Courier New', Courier, monospace;
-        }
-        .message pre {
-            background-color: #f8f9fa;
-            padding: 16px;
-            border-radius: 4px;
-            overflow-x: auto;
-            margin: 12px 0;
-        }
-        .message pre code {
-            background-color: transparent;
-            padding: 0;
-        }
-        .message blockquote {
-            border-left: 4px solid #007bff;
-            margin: 8px 0;
-            padding-left: 16px;
-            color: #666;
-        }
-        .message ul, .message ol {
-            margin: 8px 0;
-            padding-left: 24px;
-        }
-        .message h1, .message h2, .message h3, .message h4 {
-            margin: 16px 0 8px 0;
-            color: #333;
-        }
-        
-        .typing-indicator {
-            display: inline-block;
-            margin-left: 5px;
-        }
-        .typing-indicator span {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background-color: #90949c;
-            border-radius: 50%;
-            margin-right: 5px;
-            animation: typing 1s infinite ease-in-out;
-        }
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typing {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-    </style>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>Cowboy LLM</h1>
+    <div class="app-header">
+        <h1>
+            <img src="/static/logos/cowboy_logo-no-bg.png" alt="Cowboy LLM Logo" class="app-logo">
+            CowboyLLM
+        </h1>
+    </div>
     <div id="chat-container"></div>
     <form id="chat-form">
         <input type="text" id="message-input" placeholder="Type your message..." required>
