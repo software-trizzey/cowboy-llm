@@ -69,12 +69,12 @@ python src/main.py
 
 1. Build the Docker image:
 ```bash
-docker build -t local-chat .
+docker build -t cowboy-llm .
 ```
 
 2. Run the Docker container:
 ```bash
-docker run -d -p 7860:7860 local-chat
+docker run -d -p 7860:7860 cowboy-llm
 ```
 
 3. Run with docker compose:
