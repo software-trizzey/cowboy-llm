@@ -1,81 +1,32 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Local Chat</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        #chat-container {
-            border: 1px solid #ccc;
-            padding: 20px;
-            height: 400px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-        }
-        #message-input {
-            width: 80%;
-            padding: 10px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .message {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .user-message {
-            background-color: #e9ecef;
-        }
-        .ai-message {
-            background-color: #d4edda;
-        }
-        .typing-indicator {
-            display: inline-block;
-            margin-left: 5px;
-        }
-        
-        .typing-indicator span {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            background-color: #90949c;
-            border-radius: 50%;
-            margin-right: 5px;
-            animation: typing 1s infinite ease-in-out;
-        }
-
-        .typing-indicator span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .typing-indicator span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
-        @keyframes typing {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cowboy LLM</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/logos/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/logos/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/logos/favicon/favicon-16x16.png">
+    <link rel="manifest" href="/static/logos/favicon/site.webmanifest">
+    <link rel="shortcut icon" href="/static/logos/favicon/favicon.ico">
+    <meta name="theme-color" content="#ffffff">
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-    <h1>Local Chat</h1>
-    <div id="chat-container"></div>
-    <form id="chat-form">
-        <input type="text" id="message-input" placeholder="Type your message..." required>
-        <button type="submit">Send</button>
+    <div class="app-header">
+        <h1>
+            <img src="/static/logos/cowboy_logo.png" alt="Cowboy LLM Logo" class="app-logo">
+            Cowboy LLM
+        </h1>
+    </div>
+    
+    <div id="chat-container" class="hidden"></div>
+    <form id="chat-form" class="centered">
+        <input type="text" id="message-input" placeholder="Chat with Hawthorne" required autofocus>
     </form>
 
     <script>
@@ -83,9 +34,24 @@
         const SERVICE_PORT = '{{ port }}';
         const SERVICE_URL = `http://${SERVICE_HOST}:${SERVICE_PORT}`;
 
+        // Configure marked.js
+        marked.setOptions({
+            highlight: function(code, language) {
+                if (language && hljs.getLanguage(language)) {
+                    return hljs.highlight(code, { language: language }).value;
+                }
+                return hljs.highlightAuto(code).value;
+            },
+            breaks: true,
+            gfm: true
+        });
+
         const chatContainer = document.getElementById('chat-container');
         const chatForm = document.getElementById('chat-form');
         const messageInput = document.getElementById('message-input');
+
+        const sessionId = localStorage.getItem('sessionId') || generateSessionId();
+        localStorage.setItem('sessionId', sessionId);
 
         function createTypingIndicator() {
             const indicator = document.createElement('div');
@@ -94,10 +60,47 @@
             return indicator;
         }
 
+        function scrollToBottom() {
+            setTimeout(() => {
+                window.scrollTo({
+                    top: document.documentElement.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
+
+        function appendMessage(message, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', `${sender}-message`);
+            
+            if (sender === 'user') {
+                messageDiv.textContent = message;
+            } else {
+                // Parse markdown for AI messages
+                messageDiv.innerHTML = marked.parse(message);
+                // Apply syntax highlighting to code blocks
+                messageDiv.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightBlock(block);
+                });
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Remove centered class and show chat container when first message is sent
+            chatForm.classList.remove('centered');
+            chatContainer.classList.remove('hidden');
+            
             const message = messageInput.value;
             messageInput.value = '';
+            
+            // Disable input while processing
+            messageInput.disabled = true;
+            messageInput.placeholder = "Waiting for response...";
             
             appendMessage(message, 'user');
 
@@ -106,10 +109,11 @@
             const typingIndicator = createTypingIndicator();
             aiMessageDiv.appendChild(typingIndicator);
             chatContainer.appendChild(aiMessageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            scrollToBottom();
 
             const formData = new FormData();
             formData.append('message', message);
+            formData.append('session_id', sessionId);
 
             try {
                 const response = await fetch(`${SERVICE_URL}/chat`, {
@@ -129,19 +133,24 @@
                     const messages = chunk.split('\n\n');
                     
                     for (const message of messages) {
-                        const ssePrefix = 'data: ';
-                        if (message.startsWith(ssePrefix)) {
+                        if (message.startsWith('data: ')) {
                             try {
-                                const data = JSON.parse(message.slice(ssePrefix.length));
+                                const data = JSON.parse(message.slice(6));
+                                aiResponse += data.content;
                                 
                                 const typingIndicator = aiMessageDiv.querySelector('.typing-indicator');
                                 if (typingIndicator) {
                                     aiMessageDiv.removeChild(typingIndicator);
                                 }
-
-                                aiResponse += data.content;
-                                aiMessageDiv.textContent = aiResponse;
-                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                                
+                                // Parse markdown and update content
+                                aiMessageDiv.innerHTML = marked.parse(aiResponse);
+                                // Apply syntax highlighting to code blocks
+                                aiMessageDiv.querySelectorAll('pre code').forEach((block) => {
+                                    hljs.highlightBlock(block);
+                                });
+                                
+                                scrollToBottom();
                             } catch (e) {
                                 console.error('Error parsing JSON:', e);
                             }
@@ -149,18 +158,23 @@
                     }
                 }
 
+                // Re-enable input after response is complete
+                messageInput.disabled = false;
+                messageInput.placeholder = "Chat with Hawthorne";
+                messageInput.focus();
+
             } catch (error) {
                 console.error('Error:', error);
                 aiMessageDiv.textContent = 'Error: Could not get response';
+                // Re-enable input in case of error
+                messageInput.disabled = false;
+                messageInput.placeholder = "Chat with Hawthorne";
+                messageInput.focus();
             }
         });
 
-        function appendMessage(message, sender) {
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message', `${sender}-message`);
-            messageDiv.textContent = message;
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+        function generateSessionId() {
+            return 'session-' + Math.random().toString(36).substr(2, 9);
         }
     </script>
 </body>
