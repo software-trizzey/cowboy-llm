@@ -146,6 +146,11 @@ body {
     color: var(--text-secondary);
 }
 
+#message-input:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
 /* Message Styles */
 .message {
     margin: 16px 0;

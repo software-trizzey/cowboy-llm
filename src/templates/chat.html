@@ -98,6 +98,10 @@
             const message = messageInput.value;
             messageInput.value = '';
             
+            // Disable input while processing
+            messageInput.disabled = true;
+            messageInput.placeholder = "Waiting for response...";
+            
             appendMessage(message, 'user');
 
             const aiMessageDiv = document.createElement('div');
@@ -154,9 +158,18 @@
                     }
                 }
 
+                // Re-enable input after response is complete
+                messageInput.disabled = false;
+                messageInput.placeholder = "Chat with Hawthorne";
+                messageInput.focus();
+
             } catch (error) {
                 console.error('Error:', error);
                 aiMessageDiv.textContent = 'Error: Could not get response';
+                // Re-enable input in case of error
+                messageInput.disabled = false;
+                messageInput.placeholder = "Chat with Hawthorne";
+                messageInput.focus();
             }
         });
 
