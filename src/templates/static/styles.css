@@ -4,12 +4,16 @@ body {
     margin: 0 auto;
     padding: 20px;
     background-color: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
 
 #chat-container {
+    flex: 1;
     border: 1px solid #ccc;
     padding: 20px;
-    height: 600px;
+    height: calc(100vh - 250px);
     overflow-y: auto;
     margin-bottom: 20px;
     background-color: white;
@@ -17,12 +21,22 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+#chat-form {
+    display: flex;
+    gap: 10px;
+    position: sticky;
+    bottom: 0;
+    background-color: #f5f5f5;
+    padding: 10px 0;
+}
+
 #message-input {
-    width: 80%;
+    flex: 1;
     padding: 12px;
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 16px;
+    min-width: 0;
 }
 
 button {
@@ -33,6 +47,7 @@ button {
     cursor: pointer;
     border-radius: 4px;
     font-size: 16px;
+    white-space: nowrap;
 }
 
 button:hover {
@@ -43,7 +58,8 @@ button:hover {
     margin: 16px 0;
     padding: 12px;
     border-radius: 8px;
-    max-width: 80%;
+    max-width: 85%;
+    word-wrap: break-word;
 }
 
 .user-message {
@@ -55,6 +71,8 @@ button:hover {
 .ai-message {
     background-color: #f8f9fa;
     border-left: 4px solid #007bff;
+    margin-right: auto;
+    margin-left: 0;
 }
 
 /* Markdown Styling */
@@ -76,6 +94,10 @@ button:hover {
     border-radius: 4px;
     overflow-x: auto;
     margin: 12px 0;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
 .message pre code {
@@ -152,4 +174,56 @@ button:hover {
 
 .app-logo:hover {
     transform: scale(1.05);
+} 
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    .app-header h1 {
+        font-size: 24px;
+        gap: 8px;
+    }
+
+    .app-logo {
+        width: 60px;
+        height: 60px;
+    }
+
+    #chat-container {
+        padding: 10px;
+        height: calc(100vh - 200px);
+    }
+
+    .message {
+        max-width: 90%;
+        padding: 10px;
+    }
+
+    button {
+        padding: 12px 16px;
+    }
+}
+
+/* Small mobile devices */
+@media (max-width: 480px) {
+    .app-header h1 {
+        font-size: 20px;
+    }
+
+    .app-logo {
+        width: 48px;
+        height: 48px;
+    }
+
+    #message-input {
+        padding: 8px;
+    }
+
+    button {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
 } 
