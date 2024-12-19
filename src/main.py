@@ -234,21 +234,29 @@ async def handle_pdf_upload(file: UploadFile, message: str = "", chat_history: l
                 media_type="text/event-stream"
             )
 
-        # Simplify the prompt
+        # Add PDF content to chat history first
+        if chat_history is not None:
+            chat_history.append({
+                "role": "system",
+                "content": f"Document context from {file.filename}:\n\n{pdf_text}"
+            })
+            chat_history.append({
+                "role": "user",
+                "content": message if message else "Please summarize this document."
+            })
+
+        # Create prompt including previous context
         LOGGER.info("Creating prompt for model")
         messages = [
             {
                 "role": "system",
                 "content": "You are Hawthorne, a helpful cowboy assistant. Maintain your cowboy persona while providing accurate information."
-            },
-            {
-                "role": "user",
-                "content": f"Here's a document I'd like you to summarize:\n\n{pdf_text}\n\nPlease provide a clear summary of this document."
             }
         ]
         
-        if message.strip():
-            messages.append({"role": "user", "content": f"Additional instructions: {message}"})
+        # Add recent chat history for context (last 5 messages)
+        if chat_history:
+            messages.extend(chat_history[-5:])
 
         LOGGER.info(f"Sending {len(messages)} messages to model")
 
@@ -261,8 +269,8 @@ async def handle_pdf_upload(file: UploadFile, message: str = "", chat_history: l
                     options={
                         "temperature": 0.7,
                         "top_p": 0.9,
-                        "num_predict": 2048,  # Increase token limit
-                        "timeout": 60  # Increase timeout
+                        "num_predict": 2048,
+                        "timeout": 60
                     }
                 )
                 
@@ -271,7 +279,7 @@ async def handle_pdf_upload(file: UploadFile, message: str = "", chat_history: l
                 
                 for chunk in stream:
                     chunk_count += 1
-                    LOGGER.debug(f"Raw chunk {chunk_count}: {chunk}")  # Debug raw chunks
+                    LOGGER.debug(f"Raw chunk {chunk_count}: {chunk}")
                     
                     if 'message' in chunk and 'content' in chunk['message']:
                         content = chunk['message']['content']
@@ -284,7 +292,7 @@ async def handle_pdf_upload(file: UploadFile, message: str = "", chat_history: l
 
                 LOGGER.info(f"Stream completed. Processed {chunk_count} chunks")
                 if not response_content:
-                    LOGGER.warning("Warning: No content was generated")
+                    LOGGER.warning("No content was generated")
                     error_msg = "Sorry partner, I'm having trouble processing this document. Let me try a simpler approach."
                     yield f"data: {json.dumps({'content': error_msg})}\n\n"
                     
@@ -295,7 +303,7 @@ async def handle_pdf_upload(file: UploadFile, message: str = "", chat_history: l
                             model='cowboyllm:latest',
                             messages=[{
                                 "role": "user",
-                                "content": f"Please summarize this text in a simple way: {pdf_text[:1000]}..."  # First 1000 chars
+                                "content": f"Please summarize this text in a simple way: {pdf_text[:1000]}..."
                             }],
                             options={
                                 "temperature": 0.5,
@@ -303,20 +311,17 @@ async def handle_pdf_upload(file: UploadFile, message: str = "", chat_history: l
                             }
                         )
                         if response and 'content' in response['message']:
-                            yield f"data: {json.dumps({'content': response['message']['content']})}\n\n"
+                            response_content = response['message']['content']
+                            yield f"data: {json.dumps({'content': response_content})}\n\n"
                     except Exception as e:
                         LOGGER.error(f"Fallback also failed: {str(e)}")
-                    
-                if chat_history is not None:
+                
+                # Add assistant's response to chat history
+                if chat_history is not None and response_content:
                     chat_history.append({
-                        "role": "user", 
-                        "content": f"[Uploaded PDF: {file.filename}]\n{message if message else 'Please summarize this document.'}"
+                        "role": "assistant",
+                        "content": response_content
                     })
-                    if response_content:
-                        chat_history.append({
-                            "role": "assistant", 
-                            "content": response_content
-                        })
 
             except Exception as e:
                 LOGGER.error(f"Error in generate_response: {str(e)}")
