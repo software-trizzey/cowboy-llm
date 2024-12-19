@@ -26,7 +26,15 @@
     
     <div id="chat-container" class="hidden"></div>
     <form id="chat-form" class="centered">
-        <input type="text" id="message-input" placeholder="Chat with Hawthorne" required autofocus>
+        <div class="input-container">
+            <input type="text" id="message-input" placeholder="Chat with Hawthorne" required autofocus>
+            <label for="file-input" class="file-input-label">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </label>
+            <input type="file" id="file-input" accept=".pdf" style="display: none">
+        </div>
     </form>
 
     <script>
@@ -49,6 +57,8 @@
         const chatContainer = document.getElementById('chat-container');
         const chatForm = document.getElementById('chat-form');
         const messageInput = document.getElementById('message-input');
+        const fileInput = document.getElementById('file-input');
+        let selectedFile = null;
 
         const sessionId = localStorage.getItem('sessionId') || generateSessionId();
         localStorage.setItem('sessionId', sessionId);
@@ -88,6 +98,112 @@
             scrollToBottom();
         }
 
+        fileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                alert('File is too large. Please upload a PDF smaller than 10MB.');
+                fileInput.value = '';
+                return;
+            }
+
+            if (!file.name.endsWith('.pdf')) {
+                alert('Please upload a PDF file.');
+                fileInput.value = '';
+                return;
+            }
+
+            const badge = document.createElement('div');
+            badge.className = 'file-badge';
+            badge.textContent = file.name;
+            document.querySelector('.input-container').appendChild(badge);
+
+            chatForm.classList.remove('centered');
+            chatContainer.classList.remove('hidden');
+
+            messageInput.disabled = true;
+            messageInput.placeholder = "Processing document...";
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('message', messageInput.value || '');
+            formData.append('session_id', sessionId);
+
+            try {
+                appendMessage(`Uploading ${file.name}...`, 'user');
+                
+                // Clear message input if there was one
+                if (messageInput.value) {
+                    messageInput.value = '';
+                }
+                
+                const aiMessageDiv = document.createElement('div');
+                aiMessageDiv.classList.add('message', 'ai-message');
+                const typingIndicator = createTypingIndicator();
+                aiMessageDiv.appendChild(typingIndicator);
+                chatContainer.appendChild(aiMessageDiv);
+                scrollToBottom();
+
+                const response = await fetch(`${SERVICE_URL}/chat`, {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let aiResponse = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value);
+                    const messages = chunk.split('\n\n');
+                    
+                    for (const message of messages) {
+                        if (message.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(message.slice(6));
+                                aiResponse += data.content;
+                                
+                                const typingIndicator = aiMessageDiv.querySelector('.typing-indicator');
+                                if (typingIndicator) {
+                                    aiMessageDiv.removeChild(typingIndicator);
+                                }
+                                
+                                aiMessageDiv.innerHTML = marked.parse(aiResponse);
+                                aiMessageDiv.querySelectorAll('pre code').forEach((block) => {
+                                    hljs.highlightBlock(block);
+                                });
+                                
+                                scrollToBottom();
+                            } catch (e) {
+                                console.error('Error parsing JSON:', e);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                appendMessage('Error: Could not process document', 'ai');
+            } finally {
+                fileInput.value = '';
+                const badge = document.querySelector('.file-badge');
+                if (badge) badge.remove();
+                
+                messageInput.disabled = false;
+                messageInput.placeholder = "Chat with Hawthorne";
+                messageInput.focus();
+            }
+        });
+
+        // Add back the chat form submit handler for regular messages
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -118,7 +234,8 @@
             try {
                 const response = await fetch(`${SERVICE_URL}/chat`, {
                     method: 'POST',
-                    body: formData
+                    body: formData,
+                    credentials: 'include'
                 });
 
                 const reader = response.body.getReader();
@@ -143,9 +260,7 @@
                                     aiMessageDiv.removeChild(typingIndicator);
                                 }
                                 
-                                // Parse markdown and update content
                                 aiMessageDiv.innerHTML = marked.parse(aiResponse);
-                                // Apply syntax highlighting to code blocks
                                 aiMessageDiv.querySelectorAll('pre code').forEach((block) => {
                                     hljs.highlightBlock(block);
                                 });
@@ -158,15 +273,10 @@
                     }
                 }
 
-                // Re-enable input after response is complete
-                messageInput.disabled = false;
-                messageInput.placeholder = "Chat with Hawthorne";
-                messageInput.focus();
-
             } catch (error) {
                 console.error('Error:', error);
                 aiMessageDiv.textContent = 'Error: Could not get response';
-                // Re-enable input in case of error
+            } finally {
                 messageInput.disabled = false;
                 messageInput.placeholder = "Chat with Hawthorne";
                 messageInput.focus();
