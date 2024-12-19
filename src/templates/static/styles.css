@@ -77,28 +77,54 @@ body {
 /* Chat Container */
 #chat-container {
     flex: 1;
-    border: 1px solid var(--border-color);
+    border: none;
     padding: 24px;
-    height: calc(100vh - 250px);
+    padding-bottom: 80px;
+    height: calc(100vh - 400px);
     overflow-y: auto;
     margin-bottom: 20px;
-    background-color: var(--chat-bg);
+    background-color: none;
     border-radius: 12px;
-    box-shadow: var(--shadow-md);
+    box-shadow: none;
+}
+
+#chat-container.hidden {
+    display: none;
 }
 
 /* Form Styles */
 #chat-form {
     display: flex;
-    gap: 12px;
-    position: sticky;
+    position: fixed;
     bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
     background-color: var(--background-color);
     padding: 16px 0;
+    width: 100%;
+    max-width: 800px;
+    transition: all 0.3s ease-in-out;
+    z-index: 1000;
+}
+
+#chat-form.centered {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 600px;
+}
+
+#chat-form.centered #message-input {
+    height: 50px;
+    padding: 12px 16px;
 }
 
 #message-input {
     flex: 1;
+    max-width: 600px;
+    margin: 0 auto;
     padding: 16px;
     border: 1px solid var(--input-border);
     border-radius: 12px;
@@ -117,28 +143,6 @@ body {
 
 #message-input::placeholder {
     color: var(--text-secondary);
-}
-
-button {
-    padding: 16px 28px;
-    background-color: var(--button-bg);
-    color: var(--button-text);
-    border: none;
-    border-radius: 12px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.2s ease;
-    white-space: nowrap;
-}
-
-button:hover {
-    background-color: var(--button-hover);
-    transform: translateY(-1px);
-}
-
-button:active {
-    transform: translateY(0);
 }
 
 /* Message Styles */
@@ -296,10 +300,6 @@ button:active {
         max-width: 90%;
         padding: 14px;
     }
-
-    button {
-        padding: 14px 20px;
-    }
 }
 
 @media (max-width: 480px) {
@@ -318,11 +318,6 @@ button:active {
 
     #message-input {
         padding: 12px;
-    }
-
-    button {
-        padding: 12px 16px;
-        font-size: 14px;
     }
 
     .ai-message {
@@ -352,4 +347,13 @@ button:active {
 
 #chat-container::-webkit-scrollbar-thumb:hover {
     background: var(--secondary-color);
+}
+
+.welcome-message {
+    text-align: center;
+    font-size: 36px;
+    color: var(--primary-color);
+    margin: 20px 0;
+    opacity: 0; /* Start hidden */
+    transition: opacity 0.5s ease;
 } 

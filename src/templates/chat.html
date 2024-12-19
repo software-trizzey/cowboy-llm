@@ -19,13 +19,14 @@
 <body>
     <div class="app-header">
         <h1>
-            Welcome to Cowboy LLM
+            <img src="/static/logos/cowboy_logo.png" alt="Cowboy LLM Logo" class="app-logo">
+            Cowboy LLM
         </h1>
     </div>
-    <div id="chat-container"></div>
-    <form id="chat-form">
-        <input type="text" id="message-input" placeholder="Type your message..." required autofocus>
-        <button type="submit">Send</button>
+    
+    <div id="chat-container" class="hidden"></div>
+    <form id="chat-form" class="centered">
+        <input type="text" id="message-input" placeholder="Chat with Hawthorne" required autofocus>
     </form>
 
     <script>
@@ -59,6 +60,15 @@
             return indicator;
         }
 
+        function scrollToBottom() {
+            setTimeout(() => {
+                window.scrollTo({
+                    top: document.documentElement.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }, 100);
+        }
+
         function appendMessage(message, sender) {
             const messageDiv = document.createElement('div');
             messageDiv.classList.add('message', `${sender}-message`);
@@ -75,11 +85,16 @@
             }
             
             chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            scrollToBottom();
         }
 
         chatForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            
+            // Remove centered class and show chat container when first message is sent
+            chatForm.classList.remove('centered');
+            chatContainer.classList.remove('hidden');
+            
             const message = messageInput.value;
             messageInput.value = '';
             
@@ -90,7 +105,7 @@
             const typingIndicator = createTypingIndicator();
             aiMessageDiv.appendChild(typingIndicator);
             chatContainer.appendChild(aiMessageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+            scrollToBottom();
 
             const formData = new FormData();
             formData.append('message', message);
@@ -131,7 +146,7 @@
                                     hljs.highlightBlock(block);
                                 });
                                 
-                                chatContainer.scrollTop = chatContainer.scrollHeight;
+                                scrollToBottom();
                             } catch (e) {
                                 console.error('Error parsing JSON:', e);
                             }
