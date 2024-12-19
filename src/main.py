@@ -159,7 +159,8 @@ async def chat(
                 stream=True,
                 options={
                     "temperature": 0.7,
-                    "top_p": 0.9
+                    "top_p": 0.9,
+                    "num_ctx": 8192
                 }
             )
             
