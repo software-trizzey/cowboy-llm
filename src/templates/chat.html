@@ -45,6 +45,7 @@
         const SERVICE_HOST = '{{ host }}';
         const SERVICE_PORT = '{{ port }}';
         const SERVICE_URL = `http://${SERVICE_HOST}:${SERVICE_PORT}`;
+        const FILE_UPLOAD_LIMIT = 10 * 1024 * 1024; // 10MB
 
         // Configure marked.js
         marked.setOptions({
@@ -106,7 +107,7 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+            if (file.size > FILE_UPLOAD_LIMIT) {
                 alert('File is too large. Please upload a PDF smaller than 10MB.');
                 fileInput.value = '';
                 return;
