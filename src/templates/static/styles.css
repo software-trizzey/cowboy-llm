@@ -362,4 +362,55 @@ body {
     margin: 20px 0;
     opacity: 0; /* Start hidden */
     transition: opacity 0.5s ease;
+}
+
+.input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 10px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.input-container input[type="text"] {
+    flex: 1;
+    padding: 12px;
+    padding-left: 40px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    outline: none;
+    width: 100%;
+}
+
+.file-input-label {
+    position: absolute;
+    left: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    transition: color 0.3s ease;
+}
+
+.file-input-label:hover {
+    color: var(--text-primary);
+}
+
+/* Show selected file name */
+.file-badge {
+    position: absolute;
+    top: -30px;
+    right: 0;
+    background: var(--input-bg);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--text-secondary);
 } 

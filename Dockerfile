@@ -12,6 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+COPY src/ /app/src/
+
 ARG SERVICE_PORT
 ENV SERVICE_PORT=${SERVICE_PORT}
 EXPOSE ${SERVICE_PORT}
