@@ -1,6 +1,7 @@
 import logging
 import json
 import os
+import io
 import ollama
 import httpx
 from typing import Optional
@@ -12,7 +13,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Cookie
 from fastapi.staticfiles import StaticFiles
 from pypdf import PdfReader
-import io
 
 load_dotenv()
 
@@ -41,6 +41,7 @@ BRAVE_API_KEY = os.getenv("BRAVE_API_KEY")
 CHAT_HISTORIES = {}
 
 MAX_PDF_SIZE = 10 * 1024 * 1024  # 10MB limit
+MODEL_CONTEXT_SIZE = 8192
 
 async def search_brave(query: str) -> Optional[str]:
     """Perform a web search using Brave Search API."""
@@ -99,11 +100,9 @@ async def chat(
     chat_history = CHAT_HISTORIES[session_id].setdefault('messages', [])
     user_name = CHAT_HISTORIES[session_id].get('user_name', 'partner')
 
-    # Handle PDF file if uploaded
     if file and file.filename.endswith('.pdf'):
         return await handle_pdf_upload(file, message, chat_history)
-
-    # Update name detection to be more flexible
+    
     name_indicators = ["my name is", "i'm called", "i am called", "call me"]
     for indicator in name_indicators:
         if indicator in message.lower():
@@ -111,28 +110,24 @@ async def chat(
             CHAT_HISTORIES[session_id]['user_name'] = user_name
             break
 
-    # Handle regular chat messages (including web searches) as before
     chat_history.append({"role": "user", "content": message})
     
     async def generate_response():
         try:
             messages = []
             
-            # Add system message if it's the first message
             if len(chat_history) == 1:
                 messages.append({
                     "role": "system",
                     "content": f"The user's name is {user_name}. Remember to maintain your cowboy persona as Hawthorne."
                 })
 
-            # Add chat history
             for msg in chat_history[-4:]:
                 messages.append({
                     "role": msg["role"],
                     "content": msg["content"]
                 })
 
-            # Handle web searches
             if any(term in message.lower() for term in ["search", "look up", "find", "get latest", "what is", "tell me about"]):
                 yield f"data: {json.dumps({'content': 'Hold your horses partner, let me search the web...'})}\n\n"
                 search_results = await search_brave(message)
@@ -160,7 +155,7 @@ async def chat(
                 options={
                     "temperature": 0.7,
                     "top_p": 0.9,
-                    "num_ctx": 8192
+                    "num_ctx": MODEL_CONTEXT_SIZE
                 }
             )
             
@@ -171,7 +166,6 @@ async def chat(
                     response_content += content
                     yield f"data: {json.dumps({'content': content})}\n\n"
 
-            # Store the complete response in chat history
             chat_history.append({"role": "assistant", "content": response_content})
 
         except Exception as e:
@@ -191,20 +185,16 @@ def extract_text_from_pdf(file: UploadFile) -> str:
     Extract text from a PDF file upload
     """
     try:
-        # Read file content
         contents = file.file.read()
         
-        # Check file size
         if len(contents) > MAX_PDF_SIZE:
             raise HTTPException(status_code=413, detail="PDF file too large")
             
-        # Create PDF reader object
         pdf_reader = PdfReader(io.BytesIO(contents))
         
         if len(pdf_reader.pages) == 0:
             raise ValueError("PDF file is empty")
             
-        # Extract text from all pages
         text = ""
         for page in pdf_reader.pages:
             page_text = page.extract_text()
@@ -235,7 +225,6 @@ async def handle_pdf_upload(file: UploadFile, message: str = "", chat_history: l
                 media_type="text/event-stream"
             )
 
-        # Add PDF content to chat history first
         if chat_history is not None:
             chat_history.append({
                 "role": "system",
@@ -246,7 +235,6 @@ async def handle_pdf_upload(file: UploadFile, message: str = "", chat_history: l
                 "content": message if message else "Please summarize this document."
             })
 
-        # Create prompt including previous context
         LOGGER.info("Creating prompt for model")
         messages = [
             {
@@ -255,7 +243,7 @@ async def handle_pdf_upload(file: UploadFile, message: str = "", chat_history: l
             }
         ]
         
-        # Add recent chat history for context (last 5 messages)
+        # ensure PDF is in the chat history. This seems to help model remember the context
         if chat_history:
             messages.extend(chat_history[-5:])
 
@@ -271,7 +259,8 @@ async def handle_pdf_upload(file: UploadFile, message: str = "", chat_history: l
                         "temperature": 0.7,
                         "top_p": 0.9,
                         "num_predict": 2048,
-                        "timeout": 60
+                        "timeout": 60,
+                        "num_ctx": MODEL_CONTEXT_SIZE
                     }
                 )
                 
@@ -308,7 +297,8 @@ async def handle_pdf_upload(file: UploadFile, message: str = "", chat_history: l
                             }],
                             options={
                                 "temperature": 0.5,
-                                "timeout": 30
+                                "timeout": 30,
+                                "num_ctx": MODEL_CONTEXT_SIZE
                             }
                         )
                         if response and 'content' in response['message']:
