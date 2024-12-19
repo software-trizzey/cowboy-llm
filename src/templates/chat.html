@@ -87,6 +87,9 @@
         const chatForm = document.getElementById('chat-form');
         const messageInput = document.getElementById('message-input');
 
+        const sessionId = localStorage.getItem('sessionId') || generateSessionId();
+        localStorage.setItem('sessionId', sessionId);
+
         function createTypingIndicator() {
             const indicator = document.createElement('div');
             indicator.className = 'typing-indicator';
@@ -110,6 +113,7 @@
 
             const formData = new FormData();
             formData.append('message', message);
+            formData.append('session_id', sessionId);
 
             try {
                 const response = await fetch(`${SERVICE_URL}/chat`, {
@@ -161,6 +165,10 @@
             messageDiv.textContent = message;
             chatContainer.appendChild(messageDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function generateSessionId() {
+            return 'session-' + Math.random().toString(36).substr(2, 9);
         }
     </script>
 </body>
