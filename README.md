@@ -1,4 +1,4 @@
-# Cowboy LLM Chat Interface
+# Cowboy LLM
 
 A web-based chat interface that lets you interact with a cowboy-themed AI assistant named Hawthorne. The application supports both regular chat conversations and PDF document analysis.
 
