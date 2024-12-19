@@ -473,4 +473,18 @@ body {
 #chat-form:not(.centered) .file-badge {
     right: calc(50% - 314px);
 }
+
+.message a {
+    color: #2C7A7B;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.message a:hover {
+    color: #319795;
+}
+
+.message a:visited {
+    color: #285E61;
+}
  

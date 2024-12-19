@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import Cookie
 from fastapi.staticfiles import StaticFiles
 from pypdf import PdfReader
+from datetime import datetime
 
 load_dotenv()
 
@@ -115,11 +116,16 @@ async def chat(
     async def generate_response():
         try:
             messages = []
-            
+            current_date = datetime.now().strftime("%B %d, %Y")
+
             if len(chat_history) == 1:
                 messages.append({
                     "role": "system",
-                    "content": f"The user's name is {user_name}. Remember to maintain your cowboy persona as Hawthorne."
+                    "content": (
+                        f"The user's name is {user_name}. "
+                        f"Today's date is {current_date}. "
+                        "Remember to maintain your cowboy persona as Hawthorne."
+                    )
                 })
 
             for msg in chat_history[-4:]:
@@ -135,10 +141,14 @@ async def chat(
                 search_prompt = {
                     "role": "system",
                     "content": (
+                        f"Today's date is {current_date}. "
                         "Here's what I found on the web, partner. Let me break it down for you:\n\n"
                         f"{search_results}\n\n"
                         "Please provide a helpful response based on this information while maintaining "
-                        "your cowboy persona as Hawthorne. Summarize the key points and explain them clearly."
+                        "your cowboy persona as Hawthorne. Summarize the key points and explain them clearly. "
+                        "When discussing the latest news, current events or recent information, keep in mind the current date. "
+                        "Always cite your sources. Never cite sources that are not provided in the search results. "
+                        "If you are not sure about the answer, say so."
                     )
                 }
                 messages.append(search_prompt)
