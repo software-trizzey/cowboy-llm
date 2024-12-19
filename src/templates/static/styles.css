@@ -122,11 +122,14 @@ body {
 }
 
 #message-input {
+    position: relative;
     flex: 1;
     max-width: 600px;
     height: 64px;
     margin: 0 auto;
-    padding: 16px;
+    padding: 22px;
+    padding-left: 48px;
+    padding-right: 48px;
     border: 1px solid var(--input-border);
     border-radius: 12px;
     font-size: 16px;
@@ -190,6 +193,7 @@ body {
     color: var(--text-primary);
     position: relative;
     padding-left: 60px;
+    z-index: 0;
 }
 
 .ai-message::before {
@@ -204,6 +208,7 @@ body {
     background-repeat: no-repeat;
     background-position: center;
     background-image: url('/static/logos/cowboy_logo.png');
+    z-index: 1;
 }
 
 /* Markdown Styling */
@@ -324,6 +329,7 @@ body {
 
     #message-input {
         padding: 12px;
+        padding-left: 48px;
     }
 
     .ai-message {
@@ -355,15 +361,6 @@ body {
     background: var(--secondary-color);
 }
 
-.welcome-message {
-    text-align: center;
-    font-size: 36px;
-    color: var(--primary-color);
-    margin: 20px 0;
-    opacity: 0; /* Start hidden */
-    transition: opacity 0.5s ease;
-}
-
 .input-container {
     position: relative;
     display: flex;
@@ -371,46 +368,109 @@ body {
     width: 100%;
     max-width: 800px;
     margin: 0 auto;
-    padding: 10px;
-    background: #fff;
+    background: none;
     border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .input-container input[type="text"] {
     flex: 1;
     padding: 12px;
-    padding-left: 40px;
+    padding-left: 48px;
     border: none;
     border-radius: 4px;
     font-size: 16px;
     outline: none;
     width: 100%;
+    background: var(--input-bg);
+    color: var(--text-primary);
 }
 
 .file-input-label {
     position: absolute;
-    left: 20px;
+    right: 24px;
+    top: 50%;
+    transform: translateY(-50%);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #666;
+    color: var(--text-primary);
     transition: color 0.3s ease;
+    z-index: 2;
+    pointer-events: auto;
 }
 
 .file-input-label:hover {
-    color: var(--text-primary);
+    color: var(--accent-color);
 }
 
 /* Show selected file name */
 .file-badge {
     position: absolute;
-    top: -30px;
-    right: 0;
+    top: 5px;
+    right: 24px;
     background: var(--input-bg);
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;
     color: var(--text-secondary);
-} 
+    z-index: 2;
+}
+
+.chat-input-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-primary);
+    pointer-events: none;  /* Makes the icon not interfere with input */
+}
+
+/* Update chat form styles for different positions */
+#chat-form {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background: none;
+    padding: 16px 0;
+    width: 100%;
+    max-width: 800px;
+    transition: all 0.3s ease-in-out;
+    z-index: 1000;
+}
+
+#chat-form.centered {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 600px;
+}
+
+#chat-form.centered .file-input-label {
+    right: 24px;
+}
+
+#chat-form:not(.centered) .file-input-label {
+    right: calc(50% - 314px);
+}
+
+#chat-form.centered .chat-input-icon {
+    left: 24px;
+}
+
+#chat-form:not(.centered) .chat-input-icon {
+    left: calc(50% - 314px);
+}
+
+#chat-form.centered .file-badge {
+    right: 24px;
+}
+
+#chat-form:not(.centered) .file-badge {
+    right: calc(50% - 314px);
+}
+ 
