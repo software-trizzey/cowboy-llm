@@ -1,51 +1,104 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Local Chat</title>
+    <title>Cowboy LLM</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
+            background-color: #f5f5f5;
         }
         #chat-container {
             border: 1px solid #ccc;
             padding: 20px;
-            height: 400px;
+            height: 600px;
             overflow-y: auto;
             margin-bottom: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         #message-input {
             width: 80%;
-            padding: 10px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
         }
         button {
-            padding: 10px 20px;
+            padding: 12px 24px;
             background-color: #007bff;
             color: white;
             border: none;
             cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
         }
         button:hover {
             background-color: #0056b3;
         }
         .message {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
+            margin: 16px 0;
+            padding: 12px;
+            border-radius: 8px;
+            max-width: 80%;
         }
         .user-message {
             background-color: #e9ecef;
+            margin-left: auto;
+            margin-right: 0;
         }
         .ai-message {
-            background-color: #d4edda;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
         }
+        
+        /* Markdown Styling */
+        .message p {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+        .message code {
+            background-color: #f8f9fa;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .message pre {
+            background-color: #f8f9fa;
+            padding: 16px;
+            border-radius: 4px;
+            overflow-x: auto;
+            margin: 12px 0;
+        }
+        .message pre code {
+            background-color: transparent;
+            padding: 0;
+        }
+        .message blockquote {
+            border-left: 4px solid #007bff;
+            margin: 8px 0;
+            padding-left: 16px;
+            color: #666;
+        }
+        .message ul, .message ol {
+            margin: 8px 0;
+            padding-left: 24px;
+        }
+        .message h1, .message h2, .message h3, .message h4 {
+            margin: 16px 0 8px 0;
+            color: #333;
+        }
+        
         .typing-indicator {
             display: inline-block;
             margin-left: 5px;
         }
-        
         .typing-indicator span {
             display: inline-block;
             width: 8px;
@@ -55,15 +108,8 @@
             margin-right: 5px;
             animation: typing 1s infinite ease-in-out;
         }
-
-        .typing-indicator span:nth-child(2) {
-            animation-delay: 0.2s;
-        }
-
-        .typing-indicator span:nth-child(3) {
-            animation-delay: 0.4s;
-        }
-
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes typing {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
@@ -71,7 +117,7 @@
     </style>
 </head>
 <body>
-    <h1>Local Chat</h1>
+    <h1>Cowboy LLM</h1>
     <div id="chat-container"></div>
     <form id="chat-form">
         <input type="text" id="message-input" placeholder="Type your message..." required>
@@ -82,6 +128,18 @@
         const SERVICE_HOST = '{{ host }}';
         const SERVICE_PORT = '{{ port }}';
         const SERVICE_URL = `http://${SERVICE_HOST}:${SERVICE_PORT}`;
+
+        // Configure marked.js
+        marked.setOptions({
+            highlight: function(code, language) {
+                if (language && hljs.getLanguage(language)) {
+                    return hljs.highlight(code, { language: language }).value;
+                }
+                return hljs.highlightAuto(code).value;
+            },
+            breaks: true,
+            gfm: true
+        });
 
         const chatContainer = document.getElementById('chat-container');
         const chatForm = document.getElementById('chat-form');
@@ -95,6 +153,25 @@
             indicator.className = 'typing-indicator';
             indicator.innerHTML = '<span></span><span></span><span></span>';
             return indicator;
+        }
+
+        function appendMessage(message, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', `${sender}-message`);
+            
+            if (sender === 'user') {
+                messageDiv.textContent = message;
+            } else {
+                // Parse markdown for AI messages
+                messageDiv.innerHTML = marked.parse(message);
+                // Apply syntax highlighting to code blocks
+                messageDiv.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightBlock(block);
+                });
+            }
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
         }
 
         chatForm.addEventListener('submit', async (e) => {
@@ -133,18 +210,23 @@
                     const messages = chunk.split('\n\n');
                     
                     for (const message of messages) {
-                        const ssePrefix = 'data: ';
-                        if (message.startsWith(ssePrefix)) {
+                        if (message.startsWith('data: ')) {
                             try {
-                                const data = JSON.parse(message.slice(ssePrefix.length));
+                                const data = JSON.parse(message.slice(6));
+                                aiResponse += data.content;
                                 
                                 const typingIndicator = aiMessageDiv.querySelector('.typing-indicator');
                                 if (typingIndicator) {
                                     aiMessageDiv.removeChild(typingIndicator);
                                 }
-
-                                aiResponse += data.content;
-                                aiMessageDiv.textContent = aiResponse;
+                                
+                                // Parse markdown and update content
+                                aiMessageDiv.innerHTML = marked.parse(aiResponse);
+                                // Apply syntax highlighting to code blocks
+                                aiMessageDiv.querySelectorAll('pre code').forEach((block) => {
+                                    hljs.highlightBlock(block);
+                                });
+                                
                                 chatContainer.scrollTop = chatContainer.scrollHeight;
                             } catch (e) {
                                 console.error('Error parsing JSON:', e);
@@ -158,14 +240,6 @@
                 aiMessageDiv.textContent = 'Error: Could not get response';
             }
         });
-
-        function appendMessage(message, sender) {
-            const messageDiv = document.createElement('div');
-            messageDiv.classList.add('message', `${sender}-message`);
-            messageDiv.textContent = message;
-            chatContainer.appendChild(messageDiv);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-        }
 
         function generateSessionId() {
             return 'session-' + Math.random().toString(36).substr(2, 9);
