@@ -14,6 +14,7 @@ from fastapi import Cookie
 from fastapi.staticfiles import StaticFiles
 from pypdf import PdfReader
 from datetime import datetime
+from src.lib.model_actions import handle_work_mode
 
 load_dotenv()
 
@@ -40,6 +41,7 @@ BRAVE_API_URL = "https://api.search.brave.com/res/v1/web/search"
 BRAVE_API_KEY = os.getenv("BRAVE_API_KEY")
 
 CHAT_HISTORIES = {}
+conversation_states = {}
 
 MAX_PDF_SIZE = 10 * 1024 * 1024  # 10MB limit
 MODEL_CONTEXT_SIZE = 8192
@@ -95,15 +97,20 @@ async def chat(
     file: UploadFile = File(None),
     session_id: str = Cookie(None)
 ):
+    if session_id not in conversation_states:
+        conversation_states[session_id] = {"waiting_for_work_confirmation": False}
+    
     if session_id not in CHAT_HISTORIES:
         CHAT_HISTORIES[session_id] = {}
 
     chat_history = CHAT_HISTORIES[session_id].setdefault('messages', [])
     user_name = CHAT_HISTORIES[session_id].get('user_name', 'partner')
 
+    # Handle PDF uploads first
     if file and file.filename.endswith('.pdf'):
         return await handle_pdf_upload(file, message, chat_history)
-    
+
+    # Handle name detection
     name_indicators = ["my name is", "i'm called", "i am called", "call me"]
     for indicator in name_indicators:
         if indicator in message.lower():
@@ -112,7 +119,32 @@ async def chat(
             break
 
     chat_history.append({"role": "user", "content": message})
+
+    if conversation_states[session_id]["waiting_for_work_confirmation"]:
+        response = handle_work_mode(message)
+        conversation_states[session_id]["waiting_for_work_confirmation"] = False
+        chat_history.append({"role": "assistant", "content": response})
+        return StreamingResponse(
+            iter([f"data: {json.dumps({'content': response})}\n\n"]),
+            media_type="text/event-stream"
+        )
+
+    work_related_phrases = [
+        "need to focus", "trying to work", "get some work done",
+        "time to work", "got to work", "gotta work", "need to concentrate",
+        "have to study", "need to study"
+    ]
     
+    if any(phrase in message.lower() for phrase in work_related_phrases):
+        conversation_states[session_id]["waiting_for_work_confirmation"] = True
+        response = ("Well partner, sounds like you're settling in for some serious work! "
+                   "Would you like me to play your work playlist on Spotify to help you concentrate?")
+        chat_history.append({"role": "assistant", "content": response})
+        return StreamingResponse(
+            iter([f"data: {json.dumps({'content': response})}\n\n"]),
+            media_type="text/event-stream"
+        )
+
     async def generate_response():
         try:
             messages = []
@@ -134,7 +166,7 @@ async def chat(
                     "content": msg["content"]
                 })
 
-            if any(term in message.lower() for term in ["search", "look up", "find", "get latest", "what is", "tell me about"]):
+            if any(term in message.lower() for term in ["get latest", "search for", "find most recent"]):
                 yield f"data: {json.dumps({'content': 'Hold your horses partner, let me search the web...'})}\n\n"
                 search_results = await search_brave(message)
                 
